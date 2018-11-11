@@ -2,7 +2,8 @@ import csv
 import codecs
 from collections import Counter
 
-from utils import parseCSVFile, testCSVFileFormatMatching, isNumber, parseSubmissionTime
+from polls.utils import parseCSVFile, testCSVFileFormatMatching, isNumber, parseSubmissionTime
+from polls.models import Author, Submission
 
 def parseAuthorCSVFile(inputFile):
 
@@ -36,11 +37,12 @@ def getAuthorInfo(inputFile):
 	lines = [ele for ele in lines if ele]
 
 	authorList = []
+	authorModels = []
 	for authorInfo in lines:
-		# authorInfo = line.replace("\"", "").split(",")
-		# print authorInfo
 		authorList.append({'name': authorInfo[1] + " " + authorInfo[2], 'country': authorInfo[4], 'affiliation': authorInfo[5]})
-	
+		authorModels.append(Author(submission = Submission.objects.filter(submission_no= int(authorInfo[0])).first(), name = authorInfo[1] + " " + authorInfo[2], country = authorInfo[4], organisation = authorInfo[5]))
+	Author.objects.all().delete()
+	Author.objects.bulk_create(authorModels)
 
 	authors = [ele['name'] for ele in authorList if ele] # adding in the if ele in case of empty strings; same applies below
 	topAuthors = Counter(authors).most_common(10)
@@ -169,6 +171,17 @@ def getSubmissionInfo(inputFile):
 	parsedResult = {}
 	lines = parseCSVFile(inputFile)[1:]
 	lines = [ele for ele in lines if ele]
+
+	submissionModels = []
+	for submissionInfo in lines:
+	  submissionModels.append(Submission(submission_no = int(submissionInfo[0]), track_no = int(submissionInfo[1]),decision = submissionInfo[9]))
+	Submission.objects.all().delete()
+	Submission.objects.bulk_create(submissionModels)
+
+
+	acceptedAffiliations = [a.organisation for a in Author.objects.filter(submission__decision = 'accept')]
+	topAcceptedAffiliations = Counter(acceptedAffiliations).most_common(10)
+	topAcceptedAffiliations = {'names': [ele[0] for ele in topAcceptedAffiliations], 'counts': [ele[1] for ele in topAcceptedAffiliations]}
 	acceptedSubmission = [line for line in lines if str(line[9]) == 'accept']
 	rejectedSubmission = [line for line in lines if str(line[9]) == 'reject']
 
@@ -268,6 +281,7 @@ def getSubmissionInfo(inputFile):
 	parsedResult['timeSeries'] = timeSeries
 	parsedResult['lastEditSeries'] = lastEditSeries
 	parsedResult['comparableAcceptanceRate'] = comparableAcceptanceRate
+	parsedResult['topAcceptedAffiliations'] = topAcceptedAffiliations
 
 	return {'infoType': 'submission', 'infoData': parsedResult}
 
