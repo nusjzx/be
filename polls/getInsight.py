@@ -104,6 +104,8 @@ def getReviewInfo(inputFile):
 	lines = [ele for ele in lines if ele]
 	evaluation = [str(line[6]).replace("\r", "") for line in lines]
 	submissionIDs = set([str(line[1]) for line in lines])
+	reviewerName = [line[3] for line in lines ]
+	topReviewer = Counter(reviewerName).most_common(10)
 
 	scoreList = []
 	recommendList = []
@@ -147,6 +149,26 @@ def getReviewInfo(inputFile):
 		scoreList.append(weightedScore)
 		recommendList.append(weightedRecommend)
 
+	topExperts = {}
+	topTen = []
+	topTenCount =[]
+	topTenAverage=[]
+
+	for line in lines:
+		if line[3] not in topExperts:
+			topExperts[str(line[3])] = [1, int(line[4])]
+		else:
+			topExperts[str(line[3])] = [topExperts[str(line[3])][0]+1,topExperts[str(line[3])][1]+int(line[4])]
+
+	topExpertsArr = []
+	for name, value in topExperts.items():
+		topExpertsArr.append([name, value[0], round(value[1] * 1.0 / value[0] * 1.0, 1)])
+	def takeThird(elem):
+		return elem[2]
+	topExpertsArr.sort(key=takeThird, reverse = True)
+	topTen = [ele[0] for ele in topExpertsArr[:10]]
+	topTenCount = [ele[1] for ele in topExpertsArr[:10]]
+	topTenAverage = [ele[2] for ele in topExpertsArr[:10]]
 
 	parsedResult['IDReviewMap'] = submissionIDReviewMap
 	parsedResult['scoreList'] = scoreList
@@ -156,7 +178,8 @@ def getReviewInfo(inputFile):
 	parsedResult['recommendList'] = recommendList
 	parsedResult['scoreDistribution'] = {'labels': scoreDistributionLabels, 'counts': scoreDistributionCounts}
 	parsedResult['recommendDistribution'] = {'labels': recommendDistributionLabels, 'counts': recommendDistributionCounts}
-
+	parsedResult['topReviewers'] = {'labels': [ele[0] for ele in topReviewer], 'data': [ele[1] for ele in topReviewer]}
+	parsedResult['topExperts'] = {'labels': topTen, 'counts': topTenCount, 'averages': topTenAverage}
 	return {'infoType': 'review', 'infoData': parsedResult}
 
 def getSubmissionInfo(inputFile):
@@ -171,6 +194,7 @@ def getSubmissionInfo(inputFile):
 	lines = [ele for ele in lines if ele]
 	acceptedSubmission = [line for line in lines if str(line[9]) == 'accept']
 	rejectedSubmission = [line for line in lines if str(line[9]) == 'reject']
+	trackName = [line[2] for line in lines ]
 
 	acceptanceRate = float(len(acceptedSubmission)) / len(lines)
 
@@ -253,7 +277,8 @@ def getSubmissionInfo(inputFile):
 	topAcceptedAuthors = Counter(acceptedAuthors).most_common(10)
 	topAcceptedAuthorsMap = {'names': [ele[0] for ele in topAcceptedAuthors], 'counts': [ele[1] for ele in topAcceptedAuthors]}
 	# topAcceptedAuthors = {ele[0] : ele[1] for ele in Counter(acceptedAuthors).most_common(10)}
-
+   	topTrack = Counter(trackName).most_common(8)
+	   
 	parsedResult['acceptanceRate'] = acceptanceRate
 	parsedResult['overallKeywordMap'] = allKeywordMap
 	parsedResult['overallKeywordList'] = allKeywordList
@@ -268,6 +293,7 @@ def getSubmissionInfo(inputFile):
 	parsedResult['timeSeries'] = timeSeries
 	parsedResult['lastEditSeries'] = lastEditSeries
 	parsedResult['comparableAcceptanceRate'] = comparableAcceptanceRate
+	parsedResult['topTracks'] = {'labels': [ele[0] for ele in topTrack], 'data': [ele[1] for ele in topTrack]}
 
 	return {'infoType': 'submission', 'infoData': parsedResult}
 
