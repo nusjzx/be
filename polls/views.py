@@ -10,6 +10,7 @@ import json
 
 from utils import parseCSVFileFromDjangoFile, isNumber, returnTestChartData
 from getInsight import parseAuthorCSVFile, getReviewScoreInfo, getAuthorInfo, getReviewInfo, getSubmissionInfo
+from django.contrib.sessions.models import Session
 
 # Create your views here.
 # Note: a view is a func taking the HTTP request and returns sth accordingly
@@ -40,15 +41,27 @@ def uploadCSV(request):
 		else:
 			rowContent = returnTestChartData(csvFile)
 
-		print type(csvFile.name)
+		print((type(csvFile.name)))
 
 		if request.POST:
 	# current problem: request from axios not recognized as POST
 			# csvFile = request.FILES['file']
-			print "Now we got the csv file"
+			print("Now we got the csv file")
 
 		return HttpResponse(json.dumps(rowContent))
 		# return HttpResponse("Got the CSV file.")
 	else:
-		print "Not found the file!"
+		print("Not found the file!")
 		return HttpResponseNotFound('Page not found for CSV')
+
+@csrf_exempt
+def saveCloud(request):
+  request.session['savedData'] = request.body
+  request.session.save()
+  print(request.session.session_key)
+  return HttpResponse(request.session.session_key)
+
+@csrf_exempt
+def fetchCloud(request):
+  session = Session.objects.get(pk=request.GET['sessionKey'])
+  return HttpResponse(session.get_decoded()['savedData']);
