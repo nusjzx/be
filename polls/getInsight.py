@@ -56,6 +56,13 @@ def getAuthorInfo(inputFile):
 	topAffiliations = Counter(affiliations).most_common(10)
 	parsedResult['topAffiliations'] = {'labels': [ele[0] for ele in topAffiliations], 'data': [ele[1] for ele in topAffiliations]}
 
+	topAuthorInCountry ={}
+	for country in countries:
+		myAuthorInCountry = [ele['name'] for ele in authorList if ele['country'] == country]
+		myAuthorInCountry = Counter(myAuthorInCountry).most_common(10)
+		topAuthorInCountry[country] = {'labels': [ele[0] for ele in myAuthorInCountry], 'data': [ele[1] for ele in myAuthorInCountry]}
+	parsedResult['topAuthorInCountry'] = topAuthorInCountry
+
 	return {'infoType': 'author', 'infoData': parsedResult}
 
 def getReviewScoreInfo(inputFile):
@@ -243,7 +250,8 @@ def getSubmissionInfo(inputFile):
 	acceptedKeywords = [str(ele[8]).lower().replace("\r", "").split("\n") for ele in acceptedSubmission]
 	acceptedKeywords = [ele for item in acceptedKeywords for ele in item]
 	acceptedKeywordMap = {k : v for k, v in Counter(acceptedKeywords).iteritems()}
-	acceptedKeywordList = [[ele[0], ele[1]] for ele in Counter(acceptedKeywords).most_common(20)]
+	# acceptedKeywordList = [[ele[0], ele[1]] for ele in Counter(acceptedKeywords).most_common(20)]
+	acceptedKeywordList = {'names': [ele[0] for ele in Counter(acceptedKeywords).most_common(20)], 'counts': [ele[1] for ele in Counter(acceptedKeywords).most_common(20)]}
 
 	rejectedKeywords = [str(ele[8]).lower().replace("\r", "").split("\n") for ele in rejectedSubmission]
 	rejectedKeywords = [ele for item in rejectedKeywords for ele in item]
@@ -252,8 +260,10 @@ def getSubmissionInfo(inputFile):
 
 	allKeywords = [str(ele[8]).lower().replace("\r", "").split("\n") for ele in lines]
 	allKeywords = [ele for item in allKeywords for ele in item]
-	allKeywordMap = {k : v for k, v in Counter(allKeywords).iteritems()}
-	allKeywordList = [[ele[0], ele[1]] for ele in Counter(allKeywords).most_common(20)]
+	allKeywordMap = {'names': [ele[0] for ele in Counter(allKeywords).most_common(20)], 'counts': [ele[1] for ele in Counter(allKeywords).most_common(20)]}
+	# allKeywordList = [[ele[0], ele[1]] for ele in Counter(allKeywords).most_common(20)]
+	allKeywordList = {'names': [ele[0] for ele in Counter(allKeywords).most_common(20)], 'counts': [ele[1] for ele in Counter(allKeywords).most_common(20)]}
+	
 
 	tracks = set([str(ele[2]) for ele in lines])
 	paperGroupsByTrack = {track : [line for line in lines if str(line[2]) == track] for track in tracks}
@@ -271,7 +281,7 @@ def getSubmissionInfo(inputFile):
 		keywords = [ele for item in keywords for ele in item]
 		# keywordMap = {k : v for k, v in Counter(keywords).iteritems()}
 		keywordMap = [[ele[0], ele[1]] for ele in Counter(keywords).most_common(20)]
-		keywordsGroupByTrack[track] = keywordMap
+		keywordsGroupByTrack[track] = {'names': [ele[0] for ele in Counter(keywords).most_common(20)], 'counts': [ele[1] for ele in Counter(keywords).most_common(20)]}
 
 		acceptedPapersPerTrack = [ele for ele in papers if str(ele[9]) == 'accept']
 		acceptanceRateByTrack[track] = float(len(acceptedPapersPerTrack)) / len(papers)
@@ -308,6 +318,8 @@ def getSubmissionInfo(inputFile):
 	parsedResult['comparableAcceptanceRate'] = comparableAcceptanceRate
 	parsedResult['topTracks'] = {'labels': [ele[0] for ele in topTrack], 'data': [ele[1] for ele in topTrack]}
 	parsedResult['topAcceptedAffiliations'] = topAcceptedAffiliations
+
+	# parsedResult['myAllKeywords'] = myAllKeywordsMap
 
 	return {'infoType': 'submission', 'infoData': parsedResult}
 
