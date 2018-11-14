@@ -33,14 +33,19 @@ def getAuthorInfo(inputFile):
 	"""
 	parsedResult = {}
 
-	lines = parseCSVFile(inputFile)[1:]
+
+	parsedCSV = parseCSVFile(inputFile)
+	headers = parsedCSV[:1][0]
+	schema = ['submission #', 'first name', 'last name', 'email', 'country', 'organization', 'Web page', 'person #', 'corresponding?']
+	schemaIndex = [headers.index(header) for header in schema]
+	lines = parsedCSV[1:]
 	lines = [ele for ele in lines if ele]
 
 	authorList = []
 	authorModels = []
 	for authorInfo in lines:
-		authorList.append({'name': authorInfo[1] + " " + authorInfo[2], 'country': authorInfo[4], 'affiliation': authorInfo[5]})
-		authorModels.append(Author(submission = Submission.objects.filter(submission_no= int(authorInfo[0])).first(), name = authorInfo[1] + " " + authorInfo[2], country = authorInfo[4], organisation = authorInfo[5]))
+		authorList.append({'name': authorInfo[schemaIndex[1]] + " " + authorInfo[schemaIndex[2]], 'country': authorInfo[schemaIndex[4]], 'affiliation': authorInfo[schemaIndex[5]]})
+		authorModels.append(Author(submission = Submission.objects.filter(submission_no= int(authorInfo[schemaIndex[0]])).first(), name = authorInfo[schemaIndex[1]] + " " + authorInfo[schemaIndex[2]], country = authorInfo[schemaIndex[4]], organisation = authorInfo[schemaIndex[5]]))
 	Author.objects.all().delete()
 	Author.objects.bulk_create(authorModels)
 
@@ -77,7 +82,13 @@ def getReviewScoreInfo(inputFile):
 	     1,3,no - recommended
 	"""
 	parsedResult = {}
-	lines = parseCSVFile(inputFile)[1:]
+	parsedCSV = parseCSVFile(inputFile)
+	headers = parsedCSV[:1][0]
+	print(headers)
+	schema = ['review #', 'field #', 'score']
+	schemaIndex = [headers.index(header) for header in schema]
+
+	lines = parsedCSV[1:]
 	lines = [ele for ele in lines if ele]
 	scores = []
 	confidences = []
@@ -109,11 +120,16 @@ def getReviewInfo(inputFile):
 	"""
 
 	parsedResult = {}
-	lines = parseCSVFile(inputFile)
+	parsedCSV = parseCSVFile(inputFile)
+	headers = parsedCSV[:1][0]
+	print(headers)
+	schema = ['review ID', 'paper ID', 'reviewer ID', 'reviewer name', 'unknown', 'text', 'scores', 'overall score', 'unknown', 'unknown', 'unknown', 'unknown', 'date', 'time','recommend']
+	schemaIndex = [headers.index(header) for header in schema]
+	lines = parsedCSV[1:]
 	lines = [ele for ele in lines if ele]
-	evaluation = [str(line[6]).replace("\r", "") for line in lines]
-	submissionIDs = set([str(line[1]) for line in lines])
-	reviewerName = [line[3] for line in lines ]
+	evaluation = [str(line[schemaIndex[6]]).replace("\r", "") for line in lines]
+	submissionIDs = set([str(line[schemaIndex[1]]) for line in lines])
+	reviewerName = [line[schemaIndex[3]] for line in lines ]
 	topReviewer = Counter(reviewerName).most_common(10)
 
 	scoreList = []
@@ -136,7 +152,7 @@ def getReviewInfo(inputFile):
 		recommendDistributionLabels[index] = str(0 + 0.1 * index) + " ~ " + str(0 + 0.1 * index + 0.1)
 
 	for submissionID in submissionIDs:
-		reviews = [str(line[6]).replace("\r", "") for line in lines if str(line[1]) == submissionID]
+		reviews = [str(line[schemaIndex[6]]).replace("\r", "") for line in lines if str(line[schemaIndex[1]]) == submissionID]
 		# print reviews
 		confidences = [float(review.split("\n")[1].split(": ")[1]) for review in reviews]
 		scores = [float(review.split("\n")[0].split(": ")[1]) for review in reviews]
@@ -199,12 +215,17 @@ def getSubmissionInfo(inputFile):
 	File has header
 	"""
 	parsedResult = {}
-	lines = parseCSVFile(inputFile)[1:]
+	parsedCSV = parseCSVFile(inputFile)
+	headers = parsedCSV[:1][0]
+	print(headers)
+	schema = ['#', 'track #', 'track name', 'title', 'authors', 'submitted', 'last updated', 'form fields', 'keywords', 'decision', 'notified', 'reviews sent', 'abstract']
+	schemaIndex = [headers.index(header) for header in schema]
+	lines = parsedCSV[1:]
 	lines = [ele for ele in lines if ele]
 
 	submissionModels = []
 	for submissionInfo in lines:
-	  submissionModels.append(Submission(submission_no = int(submissionInfo[0]), track_no = int(submissionInfo[1]),decision = submissionInfo[9]))
+	  submissionModels.append(Submission(submission_no = int(submissionInfo[schemaIndex[0]]), track_no = int(submissionInfo[schemaIndex[1]]),decision = submissionInfo[schemaIndex[9]]))
 	Submission.objects.all().delete()
 	Submission.objects.bulk_create(submissionModels)
 
@@ -212,14 +233,14 @@ def getSubmissionInfo(inputFile):
 	acceptedAffiliations = [a.organisation for a in Author.objects.filter(submission__decision = 'accept')]
 	topAcceptedAffiliations = Counter(acceptedAffiliations).most_common(10)
 	topAcceptedAffiliations = {'names': [ele[0] for ele in topAcceptedAffiliations], 'counts': [ele[1] for ele in topAcceptedAffiliations]}
-	acceptedSubmission = [line for line in lines if str(line[9]) == 'accept']
-	rejectedSubmission = [line for line in lines if str(line[9]) == 'reject']
-	trackName = [line[2] for line in lines ]
+	acceptedSubmission = [line for line in lines if str(line[schemaIndex[9]]) == 'accept']
+	rejectedSubmission = [line for line in lines if str(line[schemaIndex[9]]) == 'reject']
+	trackName = [line[schemaIndex[2]] for line in lines ]
 
 	acceptanceRate = float(len(acceptedSubmission)) / len(lines)
 
-	submissionTimes = [parseSubmissionTime(str(ele[5])) for ele in lines]
-	lastEditTimes = [parseSubmissionTime(str(ele[6])) for ele in lines]
+	submissionTimes = [parseSubmissionTime(str(ele[schemaIndex[5]])) for ele in lines]
+	lastEditTimes = [parseSubmissionTime(str(ele[schemaIndex[6]])) for ele in lines]
 	submissionTimes = Counter(submissionTimes)
 	lastEditTimes = Counter(lastEditTimes)
 	timeStamps = sorted([k for k in submissionTimes])
@@ -258,15 +279,15 @@ def getSubmissionInfo(inputFile):
 	rejectedKeywordMap = {k : v for k, v in Counter(rejectedKeywords).iteritems()}
 	rejectedKeywordList = [[ele[0], ele[1]] for ele in Counter(rejectedKeywords).most_common(20)]
 
-	allKeywords = [str(ele[8]).lower().replace("\r", "").split("\n") for ele in lines]
+	allKeywords = [str(ele[schemaIndex[8]]).lower().replace("\r", "").split("\n") for ele in lines]
 	allKeywords = [ele for item in allKeywords for ele in item]
 	allKeywordMap = {'names': [ele[0] for ele in Counter(allKeywords).most_common(20)], 'counts': [ele[1] for ele in Counter(allKeywords).most_common(20)]}
 	# allKeywordList = [[ele[0], ele[1]] for ele in Counter(allKeywords).most_common(20)]
 	allKeywordList = {'names': [ele[0] for ele in Counter(allKeywords).most_common(20)], 'counts': [ele[1] for ele in Counter(allKeywords).most_common(20)]}
 	
 
-	tracks = set([str(ele[2]) for ele in lines])
-	paperGroupsByTrack = {track : [line for line in lines if str(line[2]) == track] for track in tracks}
+	tracks = set([str(ele[schemaIndex[2]]) for ele in lines])
+	paperGroupsByTrack = {track : [line for line in lines if str(line[schemaIndex[2]]) == track] for track in tracks}
 	keywordsGroupByTrack = {}
 	acceptanceRateByTrack = {}
 	comparableAcceptanceRate = {}
