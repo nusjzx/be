@@ -181,9 +181,9 @@ def getReviewInfo(inputFile):
 
 	for line in lines:
 		if line[3] not in topExperts:
-			topExperts[str(line[3])] = [1, int(line[4])]
+			topExperts[str(line[schemaIndex[3]])] = [1, int(line[schemaIndex[4]])]
 		else:
-			topExperts[str(line[3])] = [topExperts[str(line[3])][0]+1,topExperts[str(line[3])][1]+int(line[4])]
+			topExperts[str(line[schemaIndex[3]])] = [topExperts[str(line[schemaIndex[3]])][0]+1,topExperts[str(line[schemaIndex[3]])][1]+int(line[schemaIndex[4]])]
 
 	topExpertsArr = []
 	for name, value in topExperts.items():
